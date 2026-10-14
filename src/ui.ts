@@ -767,9 +767,9 @@ export function playUnlockRevealAnimation(
     }
   }
 
-  // Tiêu đề & Tên nhân vật mới mở khóa
+  // Unlock Celebration Header & Character Name
   const headerTxt = applyTextOutline(
-    scene.add.text(0, -270, 'MỞ KHÓA THÀNH CÔNG!', textStyle(42, '900', '#ffd166')).setOrigin(0.5),
+    scene.add.text(0, -270, 'NEW HERO UNLOCKED!', textStyle(42, '900', '#ffd166')).setOrigin(0.5),
     9,
     6
   );
@@ -790,13 +790,13 @@ export function playUnlockRevealAnimation(
     3
   );
   const tapHint = applyTextOutline(
-    scene.add.text(0, 300, 'Chạm bất kỳ đâu để tiếp tục', textStyle(22, '700', '#e2e8f0')).setOrigin(0.5),
+    scene.add.text(0, 300, 'Tap anywhere to continue', textStyle(22, '700', '#e2e8f0')).setOrigin(0.5),
     5,
     2
   );
   overlay.add([headerTxt, nameTxt, roleTxt, tapHint]);
 
-  // Hiệu ứng Phóng To Nhân Vật (Scale từ nhỏ -> Phóng cực đại 1.85x -> Nhịp thở)
+  // Hero Zoom-in Celebration Animation
   if (!REDUCED_MOTION) {
     heroHolder.setScale(0.2);
     scene.tweens.add({
@@ -828,7 +828,6 @@ export function playUnlockRevealAnimation(
     onComplete?.();
   };
 
-  // Cho phép đóng sau 350ms để người chơi kịp chiêm ngưỡng hiệu ứng phóng to
   scene.time.delayedCall(350, () => {
     hitZone.on('pointerdown', dismiss);
   });
@@ -836,11 +835,7 @@ export function playUnlockRevealAnimation(
 
 /**
  * ============================================================================
- * MENU BỘ SƯU TẬP 46 NHÂN VẬT [???] & CỬA HÀNG ĐỔI MÀU (COLOR DYE SHOP)
- * - Phân trang 46 nhân vật (6 nhân vật / trang).
- * - Nhân vật chưa mở khóa hiển thị Bóng Đen Bí Ẩn + "?" + Tên "???".
- * - Mua nhân vật sẽ TRỪ TIỀN XU ngay lập tức và kích hoạt Hiệu Ứng Phóng To!
- * - Thanh Đổi Màu Nhân Vật (10 màu sắc mua bằng Coin).
+ * 46 HERO COLLECTION [???] & COLOR DYE CUSTOMIZATION SHOP
  * ============================================================================
  */
 export function openShopModal(scene: Phaser.Scene, onClose: () => void) {
@@ -870,10 +865,10 @@ export function openShopModal(scene: Phaser.Scene, onClose: () => void) {
   panelG.fillRoundedRect(-cardW / 2 + 6, -cardH / 2 + 6, cardW - 12, cardH - 12, 30);
   card.add(panelG);
 
-  // Tiêu đề & Hộp Tiền Xu hiện có (y = -472)
+  // Header & Coin Balance (y = -472)
   const headerY = -472;
   const title = scene.add
-    .text(-110, headerY, 'NHÂN VẬT & ĐỔI MÀU', {
+    .text(-110, headerY, 'HEROES & COLOR DYES', {
       fontFamily: FONT_TEXT,
       fontSize: '30px',
       fontStyle: '900',
@@ -891,11 +886,11 @@ export function openShopModal(scene: Phaser.Scene, onClose: () => void) {
   card.add(coinBar);
 
   const coinBalanceText = scene.add
-    .text(174, headerY, `${progress.coins} XU`, textStyle(22, '900', '#d97706'))
+    .text(174, headerY, `${progress.coins}`, textStyle(22, '900', '#d97706'))
     .setOrigin(0, 0.5);
   card.add(coinBalanceText);
 
-  // Khu vực ĐỔI MÀU NHÂN VẬT (-434 -> -322)
+  // Color Dye Customization Panel (-434 -> -322)
   const dyePanelG = scene.add.graphics();
   dyePanelG.fillStyle(COLORS.CREAM_SLOT, 1);
   dyePanelG.fillRoundedRect(-cardW / 2 + 24, -434, cardW - 48, 112, 22);
@@ -909,7 +904,7 @@ export function openShopModal(scene: Phaser.Scene, onClose: () => void) {
   const dyeRowContainer = scene.add.container(0, -362);
   card.add(dyeRowContainer);
 
-  // Phân trang 46 nhân vật (6 nhân vật mỗi trang => 8 trang)
+  // Paginate 46 characters (6 per page => 8 pages)
   const ITEMS_PER_PAGE = 6;
   const totalPages = Math.ceil(SKINS.length / ITEMS_PER_PAGE);
   const activeSkinIndex = SKINS.findIndex((s) => s.id === progress.selectedSkin);
@@ -918,7 +913,7 @@ export function openShopModal(scene: Phaser.Scene, onClose: () => void) {
   const gridContainer = scene.add.container(0, 0);
   card.add(gridContainer);
 
-  // Thanh chuyển trang (y = 364, nằm dưới Hàng 2 kết thúc ở +318)
+  // Pagination Bar (y = 364, cleanly below Row 2 ending at +318)
   const pageY = 364;
   const prevPageBtn = createChunkyButton(
     scene,
@@ -963,13 +958,13 @@ export function openShopModal(scene: Phaser.Scene, onClose: () => void) {
     .text(
       0,
       414,
-      `Đã mở khóa ${progress.unlockedSkins.length}/${SKINS.length} nhân vật`,
+      `Unlocked ${progress.unlockedSkins.length}/${SKINS.length} Heroes`,
       textStyle(18, '900', '#475569')
     )
     .setOrigin(0.5);
   card.add(statusBanner);
 
-  // Nút Đóng Cửa Hàng (y = 468)
+  // Close Button (y = 468)
   const closeBtn = createChunkyButton(
     scene,
     0,
@@ -985,21 +980,21 @@ export function openShopModal(scene: Phaser.Scene, onClose: () => void) {
   );
   closeBtn.face.add(
     applyTextOutline(
-      scene.add.text(0, 0, 'TIẾP TỤC CHƠI', textStyle(26, '900', '#ffffff')).setOrigin(0.5),
+      scene.add.text(0, 0, 'CONTINUE PLAYING', textStyle(26, '900', '#ffffff')).setOrigin(0.5),
       6,
       3
     )
   );
   card.add(closeBtn.container);
 
-  // Vẽ thanh 10 Màu Nhuộm (Color Dyes)
+  // Render 10 Color Dyes Bar
   const renderDyeBar = () => {
     dyeRowContainer.removeAll(true);
     const currentSkin = SKINS.find((s) => s.id === progress.selectedSkin) || SKINS[0];
     const currentDye = progress.getSelectedDyeForSkin(currentSkin.id);
 
     dyeHeaderText.setText(
-      `ĐỔI MÀU CHO [${currentSkin.name.toUpperCase()}] • Đang dùng: ${currentDye.name}`
+      `DYE FOR [${currentSkin.name.toUpperCase()}] • Active: ${currentDye.name}`
     );
 
     const spacing = 58;
@@ -1043,26 +1038,26 @@ export function openShopModal(scene: Phaser.Scene, onClose: () => void) {
         const res = progress.buyOrSelectDye(currentSkin.id, dye);
         if (res === 'bought') {
           soundManager.playUnlock();
-          statusBanner.setText(`Đã mua màu [${dye.name}] (-${dye.cost} Xu)!`);
+          statusBanner.setText(`Purchased [${dye.name}] Dye (-${dye.cost} Coins)!`);
           renderAll();
         } else if (res === 'selected') {
           soundManager.playClick();
-          statusBanner.setText(`Đã đổi sang màu [${dye.name}]!`);
+          statusBanner.setText(`Applied [${dye.name}] Dye!`);
           renderAll();
         } else {
           soundManager.playCrash();
-          statusBanner.setText(`Cần ${dye.cost} Xu để mở khóa màu [${dye.name}]!`);
+          statusBanner.setText(`Need ${dye.cost} Coins to unlock [${dye.name}] Dye!`);
         }
       });
       dyeRowContainer.add(hit);
     });
   };
 
-  // Vẽ lưới 6 nhân vật của trang hiện tại (3 hàng x 2 cột cân đối, sát ngay dưới khung Đổi Màu)
+  // Render 6 Hero Cards of the Current Page
   const renderAll = () => {
-    coinBalanceText.setText(`${progress.coins} XU`);
+    coinBalanceText.setText(`${progress.coins} COINS`);
     pageLabel.setText(
-      `TRANG ${currentPage + 1} / ${totalPages}  (${progress.unlockedSkins.length}/${SKINS.length})`
+      `PAGE ${currentPage + 1} / ${totalPages}  (${progress.unlockedSkins.length}/${SKINS.length})`
     );
     renderDyeBar();
 
@@ -1124,7 +1119,7 @@ export function openShopModal(scene: Phaser.Scene, onClose: () => void) {
       drawCharacter(slotG, cx, avatarY, 58, styledSkin, !isUnlocked);
       gridContainer.add(slotG);
 
-      // Nếu chưa mở khóa: Hiển thị dấu "?" trên bóng đen và tên là "???"
+      // Mystery Silhouette "?" badge if locked
       if (!isUnlocked) {
         const qMark = applyTextOutline(
           scene.add
@@ -1153,8 +1148,8 @@ export function openShopModal(scene: Phaser.Scene, onClose: () => void) {
       const subString = isUnlocked
         ? skin.roleTitle
         : reachedMilestone
-        ? `Đã đạt mốc điểm • Giá: ${skin.cost} Xu`
-        : `Mốc điểm ${skin.reqScore} • Giá: ${skin.cost} Xu`;
+        ? `Milestone Reached • Price: ${skin.cost} Coins`
+        : `Goal ${skin.reqScore} Steps • Price: ${skin.cost} Coins`;
       const subText = scene.add
         .text(cx, cy + 31, subString, {
           fontFamily: FONT_TEXT,
@@ -1167,17 +1162,17 @@ export function openShopModal(scene: Phaser.Scene, onClose: () => void) {
       gridContainer.add([nameText, subText]);
 
       let btnFill = COLORS.BTN_GRAY;
-      let btnLabel = `🔒 GIÁ ${skin.cost} XU`;
+      let btnLabel = `🔒 ${skin.cost} COINS`;
 
       if (isSelected) {
         btnFill = COLORS.BTN_GREEN;
-        btnLabel = 'ĐANG CHỌN';
+        btnLabel = 'EQUIPPED';
       } else if (isUnlocked) {
         btnFill = COLORS.BTN_BLUE;
-        btnLabel = 'CHỌN NHÂN VẬT';
+        btnLabel = 'SELECT HERO';
       } else if (hasEnoughCoins) {
         btnFill = COLORS.BTN_AMBER;
-        btnLabel = `MỞ KHÓA (-${skin.cost} XU)`;
+        btnLabel = `UNLOCK (-${skin.cost} COINS)`;
       }
 
       const cardBtn = createChunkyButton(
@@ -1191,19 +1186,18 @@ export function openShopModal(scene: Phaser.Scene, onClose: () => void) {
           if (isUnlocked) {
             soundManager.playClick();
             progress.selectSkin(skin.id);
-            statusBanner.setText(`Đã trang bị nhân vật: ${skin.name}`);
+            statusBanner.setText(`Equipped Hero: ${skin.name}`);
             renderAll();
           } else if (progress.coins >= skin.cost) {
-            // Trừ đúng số Xu của nhân vật và kích hoạt hiệu ứng Phóng To Nhân Vật!
             soundManager.playUnlock();
             progress.unlockAndSelectSkin(skin);
-            statusBanner.setText(`Đã mở khóa ${skin.name} (-${skin.cost} Xu)!`);
+            statusBanner.setText(`Unlocked ${skin.name} (-${skin.cost} Coins)!`);
             renderAll();
             playUnlockRevealAnimation(scene, progress.getStyledSkin(skin));
           } else {
             soundManager.playCrash();
             statusBanner.setText(
-              `Cần thêm ${skin.cost - progress.coins} Xu nữa để mua nhân vật [???] này!`
+              `Need ${skin.cost - progress.coins} more Coins to unlock this [???] Hero!`
             );
           }
         },

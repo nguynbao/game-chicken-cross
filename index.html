@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta
@@ -8,6 +8,8 @@
     />
     <title>Crossing Tap - YouTube Playables</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <!-- YouTube Playables SDK v1 (Must be loaded before game bundle) -->
+    <script src="https://www.youtube.com/game_api/v1"></script>
     <style>
       * {
         box-sizing: border-box;
@@ -22,7 +24,7 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background-color: #2d5a27; /* Đồng bộ màu cỏ viền ngoài Canvas */
+        background-color: #2d5a27;
         touch-action: none;
       }
       #game-container {
@@ -35,7 +37,7 @@
       }
       #game-container canvas {
         display: block;
-        margin: 0 !important; /* Ngăn Phaser tự thêm margin gây lệch khung */
+        margin: 0 !important;
       }
       @media (min-width: 769px) {
         #game-container canvas {
@@ -47,8 +49,6 @@
   </head>
   <body>
     <div id="game-container"></div>
-    <!-- YouTube Playables SDK (Official API) -->
-    <script src="https://www.youtube.com/game_api/v1"></script>
     <script type="module" src="./src/main.ts"></script>
   </body>
 </html>

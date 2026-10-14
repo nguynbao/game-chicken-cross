@@ -1,21 +1,35 @@
 /**
- * Tích hợp YouTube Playables SDK chính thức kèm cơ chế dự phòng localStorage
- * Tham khảo chuẩn từ dự án Block Blast & Single Line
+ * Official YouTube Playables SDK v1 Integration with localStorage Fallback
+ * Supports:
+ * - ytgame.game.firstFrameReady() & ytgame.game.gameReady()
+ * - ytgame.game.saveData() & ytgame.game.loadData()
+ * - ytgame.engagement.sendScore({ value })
+ * - ytgame.system.isAudioEnabled(), onAudioEnabledChange(), onPause(), onResume()
+ * - ytgame.health.logError() & logWarning()
  */
 
 export interface YTGameSDK {
   IN_PLAYABLES_ENV?: boolean;
+  SDK_VERSION?: string;
   game: {
     firstFrameReady: () => void;
     gameReady: () => void;
     loadData?: () => Promise<string | null>;
     saveData?: (data: string) => Promise<void>;
   };
+  engagement?: {
+    sendScore?: (score: { value: number }) => Promise<void>;
+  };
   system?: {
     isAudioEnabled?: () => boolean;
-    onAudioEnabledChange?: (callback: (enabled: boolean) => void) => void;
-    onPause?: (callback: () => void) => void;
-    onResume?: (callback: () => void) => void;
+    onAudioEnabledChange?: (callback: (enabled: boolean) => void) => (() => void) | void;
+    onPause?: (callback: () => void) => (() => void) | void;
+    onResume?: (callback: () => void) => (() => void) | void;
+    getLanguage?: () => Promise<string>;
+  };
+  health?: {
+    logError?: () => void;
+    logWarning?: () => void;
   };
 }
 
@@ -30,6 +44,10 @@ const LOCAL_STORAGE_KEY = 'crossing_tap_save_v1';
 class YouTubePlayablesService {
   private sdk: YTGameSDK | null = null;
   private audioCallback: ((enabled: boolean) => void) | null = null;
+  private pauseCallback: (() => void) | null = null;
+  private resumeCallback: (() => void) | null = null;
+  private firstFrameSent: boolean = false;
+  private gameReadySent: boolean = false;
 
   constructor() {
     if (typeof window !== 'undefined' && window.ytgame) {
@@ -38,25 +56,50 @@ class YouTubePlayablesService {
         this.sdk.system?.onAudioEnabledChange?.((enabled) => {
           this.audioCallback?.(enabled);
         });
+        this.sdk.system?.onPause?.(() => {
+          this.pauseCallback?.();
+        });
+        this.sdk.system?.onResume?.(() => {
+          this.resumeCallback?.();
+        });
       } catch (e) {
-        console.warn('[YouTube Playables] Không thể gắn listener âm thanh:', e);
+        console.warn('[YouTube Playables] Failed to register system listeners:', e);
       }
     }
   }
 
+  public isPlayablesEnv(): boolean {
+    return !!(this.sdk && this.sdk.IN_PLAYABLES_ENV);
+  }
+
   public notifyFirstFrameReady() {
+    if (this.firstFrameSent) return;
+    this.firstFrameSent = true;
     try {
       this.sdk?.game?.firstFrameReady?.();
     } catch {
-      // Bỏ qua lỗi ngoài môi trường Playables
+      // Ignore outside Playables environment
     }
   }
 
   public notifyGameReady() {
+    if (this.gameReadySent) return;
+    this.gameReadySent = true;
     try {
       this.sdk?.game?.gameReady?.();
     } catch {
-      // Bỏ qua lỗi ngoài môi trường Playables
+      // Ignore outside Playables environment
+    }
+  }
+
+  public async sendScore(score: number): Promise<void> {
+    if (score <= 0) return;
+    try {
+      if (this.sdk?.engagement?.sendScore) {
+        await this.sdk.engagement.sendScore({ value: Math.floor(score) });
+      }
+    } catch (e) {
+      console.warn('[YouTube Playables] sendScore error:', e);
     }
   }
 
@@ -72,19 +115,25 @@ class YouTubePlayablesService {
     this.audioCallback = cb;
   }
 
+  public onLifecycleChange(onPause: () => void, onResume: () => void) {
+    this.pauseCallback = onPause;
+    this.resumeCallback = onResume;
+  }
+
   public async save(data: string): Promise<void> {
     try {
       if (this.sdk?.game?.saveData) {
         await this.sdk.game.saveData(data);
       }
     } catch (e) {
-      console.warn('[YouTube Playables] Lỗi saveData:', e);
+      console.warn('[YouTube Playables] saveData error:', e);
+      this.sdk?.health?.logWarning?.();
     }
 
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, data);
     } catch {
-      // Bỏ qua nếu trình duyệt chặn localStorage
+      // Ignore if localStorage is blocked
     }
   }
 
@@ -95,7 +144,8 @@ class YouTubePlayablesService {
         if (cloudData) return cloudData;
       }
     } catch (e) {
-      console.warn('[YouTube Playables] Lỗi loadData, chuyển sang localStorage:', e);
+      console.warn('[YouTube Playables] loadData error, falling back to localStorage:', e);
+      this.sdk?.health?.logWarning?.();
     }
 
     try {

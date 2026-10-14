@@ -17,6 +17,7 @@ import {
 } from '../constants';
 import { progress } from '../progress';
 import { soundManager } from '../audio/SoundManager';
+import { ytService } from '../ytgame';
 import {
   REDUCED_MOTION,
   applyTextOutline,
@@ -142,7 +143,7 @@ const ALL_WEATHERS: WeatherKind[] = [
 
 const WEATHER_PROFILES: Record<WeatherKind, WeatherVisualProfile> = {
   day: {
-    label: '🌤️ TRỜI QUANG',
+    label: '🌤️ CLEAR SKY',
     bannerColor: '#a7f3d0',
     skyTint: 0xffffff,
     skyAlpha: 0.0,
@@ -161,7 +162,7 @@ const WEATHER_PROFILES: Record<WeatherKind, WeatherVisualProfile> = {
     nightFlyWeight: 0,
   },
   sunny: {
-    label: '☀️ NẮNG RỰC RỠ',
+    label: '☀️ GOLDEN SUN',
     bannerColor: '#fde047',
     skyTint: 0xfbbf24,
     skyAlpha: 0.12,
@@ -180,7 +181,7 @@ const WEATHER_PROFILES: Record<WeatherKind, WeatherVisualProfile> = {
     nightFlyWeight: 0,
   },
   sunset: {
-    label: '🌇 HOÀNG HÔN ĐỎ',
+    label: '🌇 CRIMSON SUNSET',
     bannerColor: '#fb923c',
     skyTint: 0xea580c,
     skyAlpha: 0.22,
@@ -199,7 +200,7 @@ const WEATHER_PROFILES: Record<WeatherKind, WeatherVisualProfile> = {
     nightFlyWeight: 0.35,
   },
   rain: {
-    label: '🌧️ MƯA RÀO',
+    label: '🌧️ RAIN SHOWER',
     bannerColor: '#7dd3fc',
     skyTint: 0x1e3a8a,
     skyAlpha: 0.2,
@@ -218,7 +219,7 @@ const WEATHER_PROFILES: Record<WeatherKind, WeatherVisualProfile> = {
     nightFlyWeight: 0,
   },
   storm: {
-    label: '⛈️ GIÔNG BÃO SẤM CHỚP',
+    label: '⛈️ THUNDERSTORM',
     bannerColor: '#c084fc',
     skyTint: 0x0f172a,
     skyAlpha: 0.42,
@@ -237,7 +238,7 @@ const WEATHER_PROFILES: Record<WeatherKind, WeatherVisualProfile> = {
     nightFlyWeight: 0,
   },
   flood: {
-    label: '🌊 BÃO LŨ DÂNG CAO',
+    label: '🌊 FLASH FLOOD',
     bannerColor: '#38bdf8',
     skyTint: 0x0e4f63,
     skyAlpha: 0.3,
@@ -256,7 +257,7 @@ const WEATHER_PROFILES: Record<WeatherKind, WeatherVisualProfile> = {
     nightFlyWeight: 0,
   },
   snow: {
-    label: '❄️ TUYẾT ĐẦU MÙA',
+    label: '❄️ SNOWFALL',
     bannerColor: '#e0f2fe',
     skyTint: 0xcffafe,
     skyAlpha: 0.18,
@@ -275,7 +276,7 @@ const WEATHER_PROFILES: Record<WeatherKind, WeatherVisualProfile> = {
     nightFlyWeight: 0,
   },
   blizzard: {
-    label: '🌨️ BÃO TUYẾT BẮC CỰC',
+    label: '🌨️ ARCTIC BLIZZARD',
     bannerColor: '#bae6fd',
     skyTint: 0x94a3b8,
     skyAlpha: 0.32,
@@ -294,7 +295,7 @@ const WEATHER_PROFILES: Record<WeatherKind, WeatherVisualProfile> = {
     nightFlyWeight: 0,
   },
   fog: {
-    label: '🌫️ SƯƠNG MÙ DÀY ĐẶC',
+    label: '🌫️ DENSE FOG',
     bannerColor: '#cbd5e1',
     skyTint: 0xcbd5e1,
     skyAlpha: 0.26,
@@ -313,7 +314,7 @@ const WEATHER_PROFILES: Record<WeatherKind, WeatherVisualProfile> = {
     nightFlyWeight: 0.2,
   },
   night: {
-    label: '🌙 ĐÊM ĐOM ĐÓM',
+    label: '🌙 FIREFLY NIGHT',
     bannerColor: '#c4b5fd',
     skyTint: 0x090d16,
     skyAlpha: 0.46,
@@ -950,10 +951,10 @@ export class GameScene extends Phaser.Scene {
 
       const px = this.player.x + this.player.width / 2;
       const py = this.player.worldY + this.cameraOffsetY;
-      this.spawnFloatingRewardText(px, py, `+${coinBonus} XU`);
+      this.spawnFloatingRewardText(px, py, coinBonus > 1 ? `+${coinBonus} COINS` : `+${coinBonus} COIN`);
     }
 
-    // 2. Cập nhật Điểm số & Kiểm tra kịch bản chuyển Thời tiết ngẫu nhiên của trận
+    // 2. Update Score & Check dynamic weather evolution
     if (this.player.laneIndex > this.score) {
       this.score = this.player.laneIndex;
       this.scoreText.setText(`${this.score}`);
@@ -973,7 +974,7 @@ export class GameScene extends Phaser.Scene {
       this.checkDynamicWeatherEvolution(this.score);
     }
 
-    // 3. Ẩn cụm Onboarding mượt mà sau khi nhảy bước thứ 2
+    // 3. Smoothly fade out onboarding after 2nd hop
     if (this.score === 2 && this.onboardingContainer.alpha > 0) {
       this.tweens.killTweensOf(this.onboardingContainer);
       this.tweens.add({
@@ -990,10 +991,6 @@ export class GameScene extends Phaser.Scene {
     this.generateMap(this.player.laneIndex + 18);
   }
 
-  /**
-   * Khi đạt tới mốc bước ngẫu nhiên của trận -> Sinh thời tiết mới bằng thuật toán khí hậu phức tạp
-   * và bắt đầu quá trình chuyển màu/hạt mượt mà (Cross-fade)
-   */
   private checkDynamicWeatherEvolution(curScore: number) {
     if (curScore >= this.nextWeatherChangeScore) {
       const nextWeather = climateEngine.selectNextWeather(this.currentWeather, curScore);
@@ -1052,9 +1049,6 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Nội suy mượt mà giữa 2 mã màu Hex (0xRRGGBB) theo hệ số t in [0, 1]
-   */
   private lerpHexColor(c1: number, c2: number, t: number): number {
     if (t <= 0) return c1;
     if (t >= 1) return c2;
@@ -1072,12 +1066,8 @@ export class GameScene extends Phaser.Scene {
     return (r << 16) | (g << 8) | b;
   }
 
-  /**
-   * Tính toán cấu hình Thời tiết đã được nội suy mượt (SmoothStep Cross-Fade) ở khung hình hiện tại
-   */
   private getBlendedWeatherState() {
     const rawT = Phaser.Math.Clamp(this.weatherTransition, 0, 1);
-    // Đường cong SmoothStep t^2 * (3 - 2t) giúp chuyển cảnh bầu trời cực kỳ êm dịu, tự nhiên
     const t = rawT * rawT * (3 - 2 * rawT);
     const p1 = WEATHER_PROFILES[this.prevWeather];
     const p2 = WEATHER_PROFILES[this.currentWeather];
@@ -1102,11 +1092,6 @@ export class GameScene extends Phaser.Scene {
     };
   }
 
-  /**
-   * ============================================================================
-   * 3. HÀM CẬP NHẬT TRẠNG THÁI (update)
-   * ============================================================================
-   */
   override update(_time: number, delta: number) {
     if (!this.worldGraphics) return;
 
@@ -1117,14 +1102,12 @@ export class GameScene extends Phaser.Scene {
     const timeScale = Math.min(delta / 16.667, 2.5);
     this.onboardingPulseTime += delta * 0.005;
 
-    // 1. Tiến trình chuyển giao Thời tiết mượt mà (~3.2 giây để hoàn tất chuyển trời)
     if (this.weatherTransition < 1) {
       this.weatherTransition = Math.min(1, this.weatherTransition + (delta / 3200));
     }
 
     const blended = this.getBlendedWeatherState();
 
-    // 2. Cuộn Camera mượt theo nhân vật
     if (REDUCED_MOTION) {
       this.cameraOffsetY = this.targetCameraOffsetY;
       this.player.visualY = this.player.worldY;
@@ -1137,7 +1120,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // 3. Di chuyển Xe cộ và Khúc gỗ
     const wrapDistance = 210;
     for (let i = 0; i < this.lanes.length; i++) {
       const lane = this.lanes[i];
@@ -1157,15 +1139,11 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // 4. Cập nhật các hiệu ứng Hạt Thời tiết (Mưa, Tuyết, Sương mù, Bão lũ, Sấm chớp)
     if (!REDUCED_MOTION) {
       this.updateWeatherParticles(delta, timeScale, blended);
     }
 
-    // 5. Kiểm tra va chạm
     this.checkCollision(timeScale);
-
-    // 6. Vẽ đồ họa thế giới & hiệu ứng thời tiết
     this.draw(blended);
   }
 
@@ -1174,7 +1152,6 @@ export class GameScene extends Phaser.Scene {
     timeScale: number,
     blended: ReturnType<GameScene['getBlendedWeatherState']>
   ) {
-    // A. Cập nhật hạt mưa & vòng nước bắn khi có mưa / giông bão / bão lũ
     if (blended.rainWeight > 0.02) {
       const windSlant = 0.25 + blended.windWeight * 0.45;
       const speedMul = 0.85 + blended.rainWeight * 0.45;
@@ -1199,7 +1176,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // B. Cập nhật bông tuyết rơi & bão tuyết
     if (blended.snowWeight > 0.02) {
       const blizzardPush = blended.windWeight > 0.6 ? -4.8 * blended.windWeight : -0.6;
       for (const flake of this.snowFlakes) {
@@ -1216,7 +1192,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // C. Cập nhật các dải sương mù trôi ngang
     if (blended.fogWeight > 0.02) {
       for (const cloud of this.fogClouds) {
         cloud.x += cloud.speedX * timeScale;
@@ -1228,7 +1203,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // D. Cập nhật dòng nước lũ dâng cuồn cuộn
     if (blended.floodWeight > 0.02) {
       for (const fw of this.floodWaves) {
         fw.x += fw.speedX * timeScale;
@@ -1239,7 +1213,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // E. Cập nhật tia chớp (Lightning) khi đang Giông bão hoặc Bão lũ
     if (this.currentWeather === 'storm' || (this.currentWeather === 'flood' && blended.windWeight > 0.6)) {
       this.nextLightningTimer -= delta;
       if (this.nextLightningTimer <= 0) {
@@ -1252,9 +1225,6 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Tạo tia sét phân nhánh trên bầu trời khi trời Giông bão
-   */
   private triggerLightningStrike() {
     this.lightningFlashAlpha = 0.78;
     this.lightningBoltPoints = [];
@@ -1270,11 +1240,6 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * ============================================================================
-   * 4. HÀM XỬ LÝ VA CHẠM & THUA CUỘC (checkCollision)
-   * ============================================================================
-   */
   private checkCollision(timeScale: number) {
     const currentLane = this.lanes.find((l) => l.index === this.player.laneIndex);
     if (!currentLane) return;
@@ -1290,7 +1255,7 @@ export class GameScene extends Phaser.Scene {
         const car = currentLane.obstacles[i];
         if (this.rectsOverlap(px, py, pw, ph, car.x, car.y, car.width, car.height)) {
           soundManager.playCrash();
-          this.triggerGameOver('Bạn đã va chạm với phương tiện trên đường!');
+          this.triggerGameOver('Watch out for traffic on the road!');
           return;
         }
       }
@@ -1316,12 +1281,12 @@ export class GameScene extends Phaser.Scene {
           this.player.x + this.player.width > GAME_WIDTH + this.player.width * 0.5
         ) {
           soundManager.playSplash();
-          this.triggerGameOver('Bạn đã bị dòng nước cuốn trôi khỏi màn hình!');
+          this.triggerGameOver('You drifted off the screen on the river!');
           return;
         }
       } else {
         soundManager.playSplash();
-        this.triggerGameOver('Bạn đã rơi xuống dòng sông sâu!');
+        this.triggerGameOver('You splashed into the deep river!');
         return;
       }
     } else {
@@ -1342,13 +1307,6 @@ export class GameScene extends Phaser.Scene {
     return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
   }
 
-  /**
-   * ============================================================================
-   * 5. HÀM VẼ ĐỒ HỌA (draw)
-   * Vẽ thế giới với màu sắc được nội suy mượt mà theo thời tiết (Tuyết phủ, Lũ dâng,
-   * Hoàng hôn, Đêm tối...) cùng các lớp hiệu ứng hạt đa tầng.
-   * ============================================================================
-   */
   private draw(blendedState?: ReturnType<GameScene['getBlendedWeatherState']>) {
     if (!this.worldGraphics || !this.weatherGraphics) return;
     const g = this.worldGraphics;
@@ -1358,7 +1316,6 @@ export class GameScene extends Phaser.Scene {
     const camY = this.cameraOffsetY;
     const showHeadlights = blended.headlightWeight > 0.45;
 
-    // 1. Vẽ nền các làn đường với bảng màu nội suy theo Thời tiết hiện tại
     for (let i = 0; i < this.lanes.length; i++) {
       const lane = this.lanes[i];
       const screenY = lane.worldY + camY;
@@ -1377,7 +1334,6 @@ export class GameScene extends Phaser.Scene {
         g.fillStyle(blended.grassShadow, 0.45);
         g.fillRect(0, screenY + LANE_HEIGHT - 5, GAME_WIDTH, 5);
 
-        // Nếu đang có Bão lũ (floodWeight > 0) -> Vẽ vũng nước lũ dâng tràn trên mặt cỏ!
         if (blended.floodWeight > 0.05) {
           g.fillStyle(0x0ea5e9, blended.floodWeight * 0.38);
           g.fillRect(0, screenY + 12, GAME_WIDTH, LANE_HEIGHT - 24);
@@ -1387,7 +1343,6 @@ export class GameScene extends Phaser.Scene {
           g.fillRoundedRect(420 - waveOffset, screenY + 48, 160, 8, 4);
         }
 
-        // Nếu đang có Tuyết rơi / Bão tuyết -> Vẽ các mảng tuyết trắng đọng trên bãi cỏ
         if (blended.snowWeight > 0.05) {
           g.fillStyle(0xffffff, blended.snowWeight * 0.45);
           const snowPatchX = ((Math.abs(lane.index) * 197) % (GAME_WIDTH - 220)) + 70;
@@ -1443,7 +1398,6 @@ export class GameScene extends Phaser.Scene {
         }
       }
 
-      // 2. Vẽ Chướng ngại vật và Cây bên lề cỏ
       if (lane.type === 'grass') {
         if (lane.hasLeftTree) {
           drawSideTree(g, 28, screenY + LANE_HEIGHT / 2, 0.92);
@@ -1474,7 +1428,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // 3. Hiệu ứng Onboarding trực quan trên mặt đất khi mới bắt đầu (score < 2)
     const hopLift = Math.sin(this.player.hopProgress * Math.PI) * 18;
     const hopScale = 1 + Math.sin(this.player.hopProgress * Math.PI) * 0.14;
     const playerCenterX = this.player.x + this.player.width / 2;
@@ -1505,19 +1458,13 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // 4. Vẽ Nhân vật của người chơi
     const baseSkin = getSkinById(progress.selectedSkin);
     const styledSkin = progress.getStyledSkin(baseSkin);
     drawCharacter(g, playerCenterX, playerCenterY, this.player.width * hopScale, styledSkin, false);
 
-    // 5. Vẽ lớp hiệu ứng Thời tiết đa tầng đã nội suy mượt mà
     this.drawBlendedWeatherOverlay(playerCenterX, playerCenterY, blended);
   }
 
-  /**
-   * Vẽ toàn bộ hiệu ứng bầu trời, tia nắng, mưa, bão lũ, tuyết rơi, bão tuyết, sương mù, sấm chớp
-   * theo trọng số nội suy mượt mà (không bao giờ bị giật hay cắt cảnh đột ngột)
-   */
   private drawBlendedWeatherOverlay(
     playerX: number,
     playerY: number,
@@ -1526,13 +1473,11 @@ export class GameScene extends Phaser.Scene {
     const wg = this.weatherGraphics;
     wg.clear();
 
-    // 1. Lớp phủ màu bầu trời nội suy mượt mà
     if (blended.skyAlpha > 0.005) {
       wg.fillStyle(blended.skyTint, blended.skyAlpha);
       wg.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
     }
 
-    // 2. Tia nắng chiếu xiên (Trời Nắng / Hoàng Hôn / Trời Quang)
     if (blended.sunWeight > 0.02) {
       const sunAlpha = blended.sunWeight * 0.14;
       const sway = REDUCED_MOTION ? 0 : Math.sin(this.onboardingPulseTime * 0.5) * 28;
@@ -1542,7 +1487,6 @@ export class GameScene extends Phaser.Scene {
       wg.fillCircle(70, 90, 95 * blended.sunWeight);
     }
 
-    // 3. Dòng nước lũ cuồn cuộn (Bão Lũ Dâng Cao)
     if (blended.floodWeight > 0.02) {
       const wAlpha = blended.floodWeight;
       for (const fw of this.floodWaves) {
@@ -1554,7 +1498,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // 4. Hạt mưa rơi & vòng nước bắn (Mưa Rào / Giông Bão / Bão Lũ)
     if (blended.rainWeight > 0.02) {
       const rAlpha = blended.rainWeight * 0.72;
       const slant = 0.25 + blended.windWeight * 0.42;
@@ -1571,7 +1514,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // 5. Tuyết rơi & Bão tuyết Bắc Cực (Snow / Blizzard)
     if (blended.snowWeight > 0.02) {
       const sAlpha = blended.snowWeight * 0.88;
       for (const flake of this.snowFlakes) {
@@ -1581,7 +1523,6 @@ export class GameScene extends Phaser.Scene {
         wg.fillCircle(flake.x, flake.y, flake.radius * 1.45);
       }
 
-      // Viền băng giá quanh mép màn hình khi Bão tuyết mạnh
       if (blended.windWeight > 0.5) {
         const frostAlpha = (blended.windWeight - 0.5) * blended.snowWeight * 0.45;
         wg.lineStyle(18, 0xe0f2fe, frostAlpha);
@@ -1589,7 +1530,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // 6. Các lớp Sương Mù trôi bồng bềnh (Fog / Blizzard / Sunset)
     if (blended.fogWeight > 0.02) {
       for (const cloud of this.fogClouds) {
         const cAlpha = cloud.alpha * blended.fogWeight;
@@ -1600,7 +1540,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // 7. Vệt gió quét ngang khi có Bão lớn (Giông bão / Bão tuyết / Bão lũ)
     if (blended.windWeight > 0.55) {
       const gustAlpha = (blended.windWeight - 0.5) * 0.35;
       wg.lineStyle(2, 0xf1f5f9, gustAlpha);
@@ -1611,7 +1550,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // 8. Hào quang ấm quanh nhân vật & Đom đóm khi trời tối / sương mù / bão đêm
     if (blended.headlightWeight > 0.25) {
       const haloAlpha = blended.headlightWeight * 0.15;
       wg.fillStyle(0xfde047, haloAlpha);
@@ -1634,7 +1572,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // 9. Tia Sấm Chớp (Lightning Flash & Bolt) khi đang Giông bão
     if (this.lightningFlashAlpha > 0.01) {
       wg.fillStyle(0xf8fafc, this.lightningFlashAlpha * 0.55);
       wg.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
@@ -1679,20 +1616,17 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Giao diện HUD
-   */
   private createHUD() {
     const topY = SAFE_MARGIN_Y + 26;
 
-    // 1. Nút Home góc trái
+    // 1. Home Button on Top Left
     createIconButton(this, SAFE_MARGIN_X + 32, topY, 'home', () => {
       if (this.isShopOpen) return;
       soundManager.playClick();
       this.scene.start('MenuScene');
     }).container.setDepth(20);
 
-    // 2. Viên thuốc Tiền Xu
+    // 2. Coin Pill
     const coinPill = this.add.graphics().setDepth(20);
     coinPill.fillStyle(COLORS.INK, 1);
     coinPill.fillRoundedRect(SAFE_MARGIN_X + 76, topY - 32, 156, 64, 20);
@@ -1709,7 +1643,7 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0, 0.5)
       .setDepth(21);
 
-    // 3. Điểm số chính ở giữa và Huy hiệu Thời tiết (Chạm vào để thử chuyển ngẫu nhiên sang thời tiết tiếp theo)
+    // 3. Center Score & Weather Pill Button
     this.scoreText = applyTextOutline(
       this.add
         .text(GAME_WIDTH / 2, topY + 14, '0', {
@@ -1745,7 +1679,7 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5);
     weatherBtn.face.add(this.weatherPillText);
 
-    // 4. Nút mở Bộ Sưu Tập Nhân Vật [???] & Nút Âm thanh góc phải
+    // 4. Shop & Sound Buttons on Top Right
     createIconButton(
       this,
       GAME_WIDTH - SAFE_MARGIN_X - 108,
@@ -1777,7 +1711,7 @@ export class GameScene extends Phaser.Scene {
     );
     soundBtn.container.setDepth(20);
 
-    // 5. Cụm Onboarding sinh động
+    // 5. Animated Onboarding Container
     this.onboardingContainer = this.add
       .container(GAME_WIDTH / 2, GAME_HEIGHT - SAFE_MARGIN_Y - 56)
       .setDepth(22);
@@ -1798,7 +1732,7 @@ export class GameScene extends Phaser.Scene {
     promptBg.fillRoundedRect(-265, -23, 530, 46, 23);
 
     this.promptLabel = this.add
-      .text(0, 0, 'CHẠM HOẶC CLICK ĐỂ NHẢY QUA ĐƯỜNG!', textStyle(20, '900', INK_HEX))
+      .text(0, 0, 'TAP OR CLICK TO HOP ACROSS!', textStyle(20, '900', INK_HEX))
       .setOrigin(0.5);
 
     this.onboardingContainer.add([tapBadge, promptBg, this.promptLabel]);
@@ -1833,9 +1767,9 @@ export class GameScene extends Phaser.Scene {
         if (currentlyOver && currentlyOver.length > 0) return;
 
         if (pointer.wasTouch) {
-          this.promptLabel.setText('Chạm vào màn hình để nhảy tiến lên!');
+          this.promptLabel.setText('Tap the screen to hop forward!');
         } else {
-          this.promptLabel.setText('Click chuột hoặc nhấn [Space] để nhảy!');
+          this.promptLabel.setText('Click or press [Space] to hop!');
         }
 
         this.jumpForward();
@@ -1846,7 +1780,7 @@ export class GameScene extends Phaser.Scene {
       if (this.isGameOver || this.isShopOpen) return;
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
         e.preventDefault();
-        this.promptLabel.setText('Nhấn [Space] hoặc [Mũi tên Lên] để nhảy!');
+        this.promptLabel.setText('Press [Space] or [Up Arrow] to hop!');
         this.jumpForward();
       }
     });
@@ -1860,7 +1794,7 @@ export class GameScene extends Phaser.Scene {
     const jumpBtn = !!(pad.buttons[0]?.pressed || pad.buttons[12]?.pressed);
     if (jumpBtn && !this.gamepadJumpHeld) {
       this.gamepadJumpHeld = true;
-      this.promptLabel.setText('Nhấn nút [A] hoặc [D-Pad Lên] để nhảy!');
+      this.promptLabel.setText('Press [A] or [D-Pad Up] to hop!');
       if (!this.isGameOver && !this.isShopOpen) {
         this.jumpForward();
       }
@@ -1870,11 +1804,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Màn hình Game Over
+   * Game Over Modal & YouTube Playables Score Submission
    */
   private triggerGameOver(reason: string) {
     if (this.isGameOver) return;
     this.isGameOver = true;
+
+    // Submit score to YouTube Playables SDK
+    void ytService.sendScore(this.score);
 
     if (!REDUCED_MOTION) {
       this.cameras.main.shake(150, 0.012);
@@ -1897,7 +1834,7 @@ export class GameScene extends Phaser.Scene {
     modal.add(panel);
 
     modal.add(
-      this.add.text(0, -252, 'THUA CUỘC!', textStyle(48, '900', '#e11d48')).setOrigin(0.5)
+      this.add.text(0, -252, 'GAME OVER!', textStyle(48, '900', '#e11d48')).setOrigin(0.5)
     );
     modal.add(
       this.add.text(0, -198, reason, textStyle(21, '700', '#475569')).setOrigin(0.5)
@@ -1923,8 +1860,8 @@ export class GameScene extends Phaser.Scene {
 
     const isNewBest = this.score > this.startingBestScore && this.score > 0;
     const summaryText = isNewBest
-      ? `★ KỶ LỤC MỚI!  •  +${this.runCoinsEarned} XU LƯỢT NÀY`
-      : `KỶ LỤC: ${progress.bestScore}  •  +${this.runCoinsEarned} XU LƯỢT NÀY`;
+      ? `★ NEW RECORD!  •  +${this.runCoinsEarned} COINS THIS RUN`
+      : `BEST: ${progress.bestScore}  •  +${this.runCoinsEarned} COINS THIS RUN`;
 
     const summaryLine = this.add
       .text(0, -8, summaryText, textStyle(21, '900', isNewBest ? '#e11d48' : INK_HEX))
@@ -1937,8 +1874,8 @@ export class GameScene extends Phaser.Scene {
         0,
         54,
         readyCount > 0
-          ? `🎉 Có ${readyCount} nhân vật bí ẩn [???] đủ Xu để mở khóa!`
-          : `Đã mở khóa ${progress.unlockedSkins.length}/${SKINS.length} nhân vật`,
+          ? `🎉 ${readyCount} mystery hero(es) [???] ready to unlock!`
+          : `Unlocked ${progress.unlockedSkins.length}/${SKINS.length} Heroes`,
         textStyle(19, '900', readyCount > 0 ? '#d97706' : '#64748b')
       )
       .setOrigin(0.5);
@@ -1963,7 +1900,7 @@ export class GameScene extends Phaser.Scene {
       { radius: 24, shadow: 8, outline: 4 }
     );
     restartBtn.face.add(
-      applyTextOutline(this.add.text(0, 0, 'CHƠI LẠI (RESTART)', textStyle(30, '900', '#ffffff')).setOrigin(0.5), 6, 4)
+      applyTextOutline(this.add.text(0, 0, 'PLAY AGAIN', textStyle(30, '900', '#ffffff')).setOrigin(0.5), 6, 4)
     );
     modal.add(restartBtn.container);
     gameOverButtons.push(restartBtn);
@@ -1985,8 +1922,8 @@ export class GameScene extends Phaser.Scene {
           const newReady = progress.countReadyToUnlock();
           unlockNoticeText.setText(
             newReady > 0
-              ? `🎉 Có ${newReady} nhân vật bí ẩn [???] đủ Xu để mở khóa!`
-              : `Đã mở khóa ${progress.unlockedSkins.length}/${SKINS.length} nhân vật`
+              ? `🎉 ${newReady} mystery hero(es) [???] ready to unlock!`
+              : `Unlocked ${progress.unlockedSkins.length}/${SKINS.length} Heroes`
           );
           this.draw();
         });
@@ -1999,7 +1936,7 @@ export class GameScene extends Phaser.Scene {
           .text(
             0,
             0,
-            readyCount > 0 ? `NHÂN VẬT [???] & ĐỔI MÀU (${readyCount})` : 'NHÂN VẬT [???] & ĐỔI MÀU',
+            readyCount > 0 ? `HEROES [???] & DYES (${readyCount})` : 'HEROES [???] & DYES',
             textStyle(24, '900', '#ffffff')
           )
           .setOrigin(0.5),

@@ -199,10 +199,10 @@ export class MenuScene extends Phaser.Scene {
     bestPill.fillRoundedRect(SAFE_MARGIN_X + 212, topY - 26, 187, 52, 18);
 
     this.bestValueText = this.add
-      .text(SAFE_MARGIN_X + 305, topY, `KỶ LỤC: ${progress.bestScore}`, textStyle(20, '900', INK_HEX))
+      .text(SAFE_MARGIN_X + 305, topY, `BEST: ${progress.bestScore}`, textStyle(20, '900', INK_HEX))
       .setOrigin(0.5);
 
-    // Nút Âm thanh góc phải
+    // Sound Toggle Button on Top Right
     const soundBtn = createIconButton(
       this,
       GAME_WIDTH - SAFE_MARGIN_X - 32,
@@ -217,7 +217,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /**
-   * Cụm tiêu đề "CROSSING TAP" nổi khối 3D
+   * 3D Toy-Box Title Header "CROSSING TAP"
    */
   private createTitleHeader() {
     const makeWord = (word: string, y: number, size: number, rot: number, color: string) => {
@@ -253,7 +253,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /**
-   * Khung Chọn Nhân Vật Trực Tiếp trên Menu (46 Nhân vật + Bóng đen Bí Ẩn [???])
+   * Live Character Carousel Card on Menu (46 Heroes + Mystery Silhouettes [???])
    */
   private createCharacterCarouselCard() {
     const cardY = 605;
@@ -273,11 +273,11 @@ export class MenuScene extends Phaser.Scene {
       27
     );
 
-    // Bục tròn dưới chân nhân vật
+    // Podium ellipse under character
     cardG.fillStyle(COLORS.CREAM_SLOT, 1);
     cardG.fillEllipse(GAME_WIDTH / 2, cardY - 12, 160, 46);
 
-    // Nút chuyển Trái "<"
+    // Previous "<" Button
     const prevBtn = createChunkyButton(
       this,
       GAME_WIDTH / 2 - 215,
@@ -296,7 +296,7 @@ export class MenuScene extends Phaser.Scene {
     );
     prevBtn.face.add(this.add.text(0, -2, '◀', textStyle(28, '900', INK_HEX)).setOrigin(0.5));
 
-    // Nút chuyển Phải ">"
+    // Next ">" Button
     const nextBtn = createChunkyButton(
       this,
       GAME_WIDTH / 2 + 215,
@@ -356,37 +356,37 @@ export class MenuScene extends Phaser.Scene {
     const { reachedMilestone, canUnlock } = progress.canUnlockSkin(skin);
 
     this.coinValueText.setText(`${progress.coins}`);
-    this.bestValueText.setText(`KỶ LỤC: ${progress.bestScore}`);
+    this.bestValueText.setText(`BEST: ${progress.bestScore}`);
 
     const cardY = 605;
     this.previewAvatarGfx.clear();
     drawCharacter(this.previewAvatarGfx, GAME_WIDTH / 2, cardY - 46, 86, styledSkin, !isUnlocked);
     this.previewQuestionText.setVisible(!isUnlocked);
 
-    // Nếu chưa mở khóa: Hiển thị tên là "???" và giá mua bằng Xu
+    // If locked: Display mystery name "???" and coin price
     if (isUnlocked) {
       this.previewNameText.setText(`${skin.name} (${this.previewIndex + 1}/${SKINS.length})`);
       this.previewNameText.setColor(INK_HEX);
-      this.previewRoleText.setText(isSelected ? `✓ Đang trang bị • ${skin.roleTitle}` : skin.roleTitle);
+      this.previewRoleText.setText(isSelected ? `✓ Equipped • ${skin.roleTitle}` : skin.roleTitle);
       this.previewRoleText.setColor('#16a34a');
     } else {
       this.previewNameText.setText(`??? (${this.previewIndex + 1}/${SKINS.length})`);
       this.previewNameText.setColor('#334155');
       this.previewRoleText.setText(
         reachedMilestone
-          ? `Đã đạt mốc ${skin.reqScore} bước • Giá mở khóa: ${skin.cost} Xu`
-          : `Mốc gợi ý: ${skin.reqScore} bước • Giá mở khóa: ${skin.cost} Xu`
+          ? `Goal ${skin.reqScore} Reached • Unlock Price: ${skin.cost} Coins`
+          : `Goal: ${skin.reqScore} Steps • Unlock Price: ${skin.cost} Coins`
       );
       this.previewRoleText.setColor(canUnlock ? '#d97706' : '#64748b');
     }
 
-    // Nút bên dưới nhân vật đang xem trước
+    // Action button below previewed character
     this.previewActionBtnContainer.removeAll(true);
     if (!isUnlocked) {
       const btnColor = canUnlock ? COLORS.BTN_AMBER : COLORS.BTN_GRAY;
       const btnText = canUnlock
-        ? `MỞ KHÓA NGAY (-${skin.cost} XU)`
-        : `🔒 CẦN ${skin.cost} XU ĐỂ MỞ KHÓA`;
+        ? `UNLOCK NOW (-${skin.cost} COINS)`
+        : `🔒 NEED ${skin.cost} COINS TO UNLOCK`;
 
       const unlockBtn = createChunkyButton(
         this,
@@ -428,7 +428,7 @@ export class MenuScene extends Phaser.Scene {
         { radius: 16, shadow: 5, outline: 3 }
       );
       equipBtn.face.add(
-        applyTextOutline(this.add.text(0, 0, 'CHỌN NHÂN VẬT NÀY', textStyle(18, '900', '#ffffff')).setOrigin(0.5), 4, 2)
+        applyTextOutline(this.add.text(0, 0, 'SELECT THIS HERO', textStyle(18, '900', '#ffffff')).setOrigin(0.5), 4, 2)
       );
       this.previewActionBtnContainer.add(equipBtn.container);
     } else {
@@ -447,7 +447,7 @@ export class MenuScene extends Phaser.Scene {
         { radius: 16, shadow: 4, outline: 3 }
       );
       dyeBtn.face.add(
-        applyTextOutline(this.add.text(0, 0, '🎨 ĐỔI MÀU SƠN / TỦ ĐỒ', textStyle(17, '900', '#ffffff')).setOrigin(0.5), 4, 2)
+        applyTextOutline(this.add.text(0, 0, '🎨 CUSTOMIZE DYES & HEROES', textStyle(17, '900', '#ffffff')).setOrigin(0.5), 4, 2)
       );
       this.previewActionBtnContainer.add(dyeBtn.container);
     }
@@ -465,7 +465,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /**
-   * Hai nút lớn phía dưới: BẮT ĐẦU CHƠI và NHÂN VẬT & ĐỔI MÀU [???]
+   * Main Bottom Buttons: PLAY NOW and HEROES & COLOR DYES [???]
    */
   private createMainButtons() {
     const playBtn = createChunkyButton(
@@ -483,7 +483,7 @@ export class MenuScene extends Phaser.Scene {
       { radius: 28, shadow: 10, outline: 5 }
     );
     playBtn.face.add(
-      applyTextOutline(this.add.text(0, 0, 'BẮT ĐẦU CHƠI', textStyle(42, '900', '#ffffff')).setOrigin(0.5), 8, 5)
+      applyTextOutline(this.add.text(0, 0, 'PLAY NOW', textStyle(42, '900', '#ffffff')).setOrigin(0.5), 8, 5)
     );
 
     const vaultBtn = createChunkyButton(
@@ -516,9 +516,9 @@ export class MenuScene extends Phaser.Scene {
     const unlockedCount = progress.unlockedSkins.length;
     const readyCount = progress.countReadyToUnlock();
     if (readyCount > 0) {
-      this.unlockBadgeText.setText(`46 NHÂN VẬT [???] & ĐỔI MÀU • ${readyCount} MỚI!`);
+      this.unlockBadgeText.setText(`46 HEROES [???] & DYES • ${readyCount} READY!`);
     } else {
-      this.unlockBadgeText.setText(`NHÂN VẬT & ĐỔI MÀU (${unlockedCount}/${SKINS.length})`);
+      this.unlockBadgeText.setText(`HEROES & DYES (${unlockedCount}/${SKINS.length})`);
     }
   }
 

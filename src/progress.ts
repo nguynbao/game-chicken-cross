@@ -99,6 +99,7 @@ class ProgressManager {
     if (score > this.bestScore) {
       this.bestScore = score;
       this.persist();
+      void ytService.sendScore(score);
       return true;
     }
     return false;
